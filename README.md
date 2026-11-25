@@ -1,4 +1,4 @@
-# BUPT Dorm Electricity Monitor
+# BUPT Power
 
 > Get an email **before** your dorm runs out of electricity credit.
 
@@ -54,8 +54,8 @@ A meter read is asynchronous: the service submits a task, receives a task ID, th
 ## Getting started
 
 ```bash
-git clone https://github.com/<your-username>/<your-repo>.git
-cd <your-repo>
+git clone https://github.com/luoate/bupt-power.git
+cd bupt-power
 pip install -r requirements.txt
 python server.py
 ```
