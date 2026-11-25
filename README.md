@@ -1,57 +1,59 @@
 # BUPT Power
 
-> Get an email **before** your dorm runs out of electricity credit.
+[English](README.en.md) | **中文**
+
+> 在宿舍断电**之前**收到提醒邮件。
 
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Flask](https://img.shields.io/badge/Flask-3.x-black)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
 ![Dependencies](https://img.shields.io/badge/dependencies-2-brightgreen)
 
-A small self-hosted service that watches a BUPT dormitory electricity meter, performs real meter reads on a schedule, and sends email alerts when the balance drops below a threshold. It comes with a local web console for viewing the balance, the usage history, and for editing every setting from the browser.
+一个自托管的小服务，盯住北邮宿舍的电表：按计划主动抄表，余额低于阈值时发邮件提醒。自带一个本地网页控制台，余额、用电走势、所有参数都能在浏览器里看和改。
 
-Built for the Shahe campus electricity portal (`shgyfk.bupt.edu.cn`), which caps manual meter reads at **10 per day** — the whole design is shaped around staying well under that limit.
-
----
-
-## Features
-
-- **Scheduled meter reads** — forces a real reading every N hours (default 12) instead of relying on the portal's cached value
-- **Cheap balance polling** — reads the cached balance every N minutes (default 60) without spending the daily read quota
-- **Threshold alerts with cooldown** — emails once when the balance drops below your threshold, then at most once per cooldown period (default 24 h)
-- **Recovery notification** — a second email when the balance climbs back above the threshold
-- **Failure alerts** — notifies you after 3 consecutive query or meter-read failures
-- **Web console** — live balance, remaining-days bar, balance history chart, editable settings, dorm picker
-- **Dorm picker** — drill down through campus → area → building → floor → room; the choice is saved as the default
-- **Zero extra infrastructure** — the scheduler runs inside the web service, so there is no cron job or Windows task to install
-- **LAN access** — optional, so you can check the balance from your phone on the same Wi-Fi
+针对沙河校区的缴费平台（`shgyfk.bupt.edu.cn`）编写。该平台把手动抄表限制在**每天 10 次**，所以整个设计都围绕「尽量少用额度」展开。
 
 ---
 
-## How it works
+## 功能
 
-The portal's frontend is protected by a JavaScript anti-bot layer, which blocks naive scraping — but its JSON API is reachable directly. Authentication uses the **public query account embedded in the site's own frontend bundle**, so no student ID or password is involved.
+- **定时抄表** —— 每 N 小时（默认 12）真正读一次电表，而不是依赖平台缓存值
+- **廉价余额轮询** —— 每 N 分钟（默认 60）读一次缓存余额，不消耗每日额度
+- **带冷却的阈值告警** —— 跌破阈值时发一封，之后每个冷却周期（默认 24 小时）最多一封
+- **恢复通知** —— 余额回到阈值以上时再发一封
+- **失败告警** —— 连续 3 次查询或抄表失败时通知你
+- **网页控制台** —— 实时余额、剩余天数条、余额走势图、可改参数、宿舍选择器
+- **宿舍选择器** —— 校区 → 园区 → 楼 → 层 → 房间逐级点选，选完保存为默认
+- **不需要额外组件** —— 调度跑在 Web 服务内部，不用装 cron 或 Windows 计划任务
+- **局域网访问** —— 可选，手机连同一个 WiFi 就能看
 
-Three endpoints do the work:
+---
 
-| Purpose | Cost |
+## 工作原理
+
+平台前端有 JavaScript 动态防护，直接抓 HTML 会被拦，但它的 JSON 接口可以直连。登录用的是**学校前端 bundle 里内置的公开查询账号**，不涉及学号或密码。
+
+三个接口撑起全部功能：
+
+| 用途 | 代价 |
 | --- | --- |
-| Read the cached balance | free, unlimited |
-| Force a real meter read (async task + polling) | 1 unit of the daily 10 |
-| Walk the building tree (for the room picker) | free |
+| 读缓存余额 | 免费，不限次 |
+| 强制抄表（异步任务 + 轮询） | 消耗每日 10 次中的 1 次 |
+| 遍历楼栋树（供宿舍选择器用） | 免费 |
 
-A meter read is asynchronous: the service submits a task, receives a task ID, then polls every 2 seconds for up to 30 seconds until the meter reports back.
+抄表是异步的：先下发任务拿到 task ID，然后每 2 秒轮询一次，最多等 30 秒，直到电表回报结果。
 
 ---
 
-## Requirements
+## 环境要求
 
 - Python 3.10+
-- Two packages: `requests`, `flask`
-- An SMTP account that allows app passwords (QQ Mail, 163, Gmail, Outlook, …)
+- 两个依赖：`requests`、`flask`
+- 一个支持应用专用密码的 SMTP 账号（QQ 邮箱、163、Gmail、Outlook 等）
 
 ---
 
-## Getting started
+## 快速开始
 
 ```bash
 git clone https://github.com/luoate/bupt-power.git
@@ -60,128 +62,128 @@ pip install -r requirements.txt
 python server.py
 ```
 
-On first run, `config.example.json` is copied to `config.json`. Open the console, pick your dorm, fill in your SMTP details, and save.
+首次运行时会自动把 `config.example.json` 复制成 `config.json`。打开控制台，选好宿舍、填上 SMTP 信息，保存即可。
 
-**Windows shortcut:** double-click `start.bat` — it launches the server and opens the browser.
+**Windows 快捷方式：** 双击 `start.bat`，它会启动服务并打开浏览器。
 
 ```
 ==============================================
- Electricity monitor started
-   Local        http://127.0.0.1:5000
-   LAN          http://192.168.1.23:5000
-   (use the LAN address from your phone on the same Wi-Fi)
+电费监控控制台已启动
+  本机访问   http://127.0.0.1:5000
+  局域网访问 http://192.168.1.23:5000
+  （手机连同一个 WiFi，用上面的局域网地址）
 ==============================================
 ```
 
-> **The service must stay running.** Scheduling and alerting live inside this process. Close the window and monitoring stops.
+> **服务必须一直开着。** 定时抄表和告警都在这个进程里，窗口关掉监控就停了。
 
 ---
 
-## Web console
+## 网页控制台
 
-| Section | What it does |
+| 区域 | 作用 |
 | --- | --- |
-| Balance | Large readout, plus estimated days remaining and the alert threshold. Turns red below the threshold, orange under 3 days |
-| Refresh meter | Performs a real meter read immediately. **Consumes 1 daily read.** |
-| Daily quota | Remaining manual reads out of 10; resets at midnight |
-| Next meter read | Countdown to the next forced read |
-| Next balance check | Countdown to the next cached read (free) |
-| History | Balance chart plus a detailed table |
-| Dorm | Drill-down picker; saved as the default |
-| Alerts | Threshold, both intervals, cooldown, SMTP settings |
+| 当前余额 | 大字显示，附带预估可用天数和告警线。低于阈值变红，不足 3 天变橙 |
+| 刷新表计 | 立刻真正读一次电表。**消耗 1 次每日额度** |
+| 今日剩余额度 | 手动抄表剩余次数（满分 10），零点重置 |
+| 下次自动抄表 | 距下一次强制抄表的倒计时 |
+| 下次读余额 | 距下一次读缓存余额的倒计时（免费） |
+| 余额走势 | 走势图 + 明细表 |
+| 宿舍 | 逐级点选，保存为默认 |
+| 告警设置 | 阈值、两个间隔、冷却时间、SMTP 配置 |
 
-The footer reports scheduler health, e.g. *"scheduler running · last 12:10 balance 58.90 (cached)"*.
+页脚会显示后台调度的运行状态，例如「后台监控运行中 · 上次 12:10 余额 58.90 元（缓存）」。
 
 ---
 
-## Configuration
+## 配置项
 
-All settings live in `config.json`, which is shared by the web console and the CLI. Edit them in the browser — changes apply on the scheduler's next tick, no restart needed.
+所有设置都在 `config.json` 里，网页控制台和命令行共用这一个文件。在浏览器里改完即生效，调度线程下一轮就按新值执行，不用重启。
 
-| Setting | Range | Default |
+| 配置项 | 范围 | 默认 |
 | --- | --- | --- |
 | `threshold_yuan` | > 0 | `10` |
 | `site.check_interval_minutes` | 10 – 1440 | `60` |
 | `refresh.interval_hours` | 1 – 24 | `12` |
 | `refresh.enabled` | `true` / `false` | `true` |
 | `alert.cooldown_hours` | 1 – 720 | `24` |
-| `web.host` | `127.0.0.1` or `0.0.0.0` | `127.0.0.1` |
+| `web.host` | `127.0.0.1` 或 `0.0.0.0` | `127.0.0.1` |
 
-### The two intervals are not the same thing
+### 两个间隔不是一回事
 
-This is the easiest part to get wrong.
+这是最容易搞混的地方。
 
-**Balance check interval (default 60 min)** reads the portal's cached balance. It never touches the meter, so it costs nothing and can be set aggressively.
+**读取余额间隔（默认 60 分钟）** 读的是平台缓存的余额。它从不碰电表，不消耗额度，可以设得很密。
 
-**Meter read interval (default 12 h)** sends a real read command to the meter. It returns a live value and **consumes 1 of the 10 daily reads**.
+**自动抄表间隔（默认 12 小时）** 给电表下发真正的抄表指令。返回的是实时值，**消耗每日 10 次额度中的 1 次**。
 
-The key consequence: **between two meter reads the balance is frozen** — the portal does not refresh its own cache. So:
+关键后果是：**两次抄表之间，余额是冻结的** —— 平台不会自己刷新缓存。所以：
 
-- Worst-case alert latency ≈ the *meter read* interval, not the balance check interval
-- Don't set the threshold right at the point where you'd lose power. At 10 yuan and a 12-hour read interval, a balance can fall below the threshold and not be noticed for 12 hours
-- Shorter reads are more responsive, but 10 reads/day caps you at one every 2.4 hours. At 12 hours you use 2 per day, leaving headroom for manual checks
+- 告警的最坏延迟 ≈ **自动抄表间隔**，不是读取余额间隔
+- 阈值不要贴着断电点设。10 元阈值、12 小时抄一次，意味着余额跌破 10 元后最坏要过 12 小时才会被发现
+- 抄得越勤越灵敏，但每天 10 次额度决定了最快也只能 2.4 小时一次。12 小时一次等于每天只用 2 次，留足余量给手动检查
 
-### Email alerts
+### 邮件告警规则
 
-| Situation | Email sent? |
+| 情况 | 是否发信 |
 | --- | --- |
-| Balance drops below threshold | Yes, then cooldown starts |
-| Still below, cooldown not elapsed | No |
-| Still below, cooldown elapsed | Yes, at most once per cooldown |
-| Balance back above threshold | Yes, a recovery notice |
-| 3 consecutive query failures | Yes, at most once per day |
-| 3 consecutive meter-read failures | Yes, warning that the shown balance is stale |
+| 余额跌破阈值 | 发，然后进入冷却 |
+| 仍在阈值下，冷却未过 | 不发 |
+| 仍在阈值下，冷却已过 | 发，每个冷却周期最多一封 |
+| 余额回到阈值以上 | 发一封恢复通知 |
+| 连续 3 次查询失败 | 发，每天最多一封 |
+| 连续 3 次抄表失败 | 发，提示当前显示的余额是缓存数据 |
 
-Multiple recipients are comma-separated (full-width commas also work):
+多个收件人用逗号分隔，中文逗号也能识别：
 
 ```
 you@qq.com, roommate@example.com
 ```
 
-> **The sender and the recipient are separate fields.** Listing an address as the sender does not send anything to it.
+> **发件人和收件人是两个独立的字段。** 把某个地址填在发件人里，并不会给它发任何邮件。
 
-### SMTP authorization codes
+### SMTP 授权码
 
-QQ Mail requires an app-specific authorization code, **not your login password**. Enable *POP3/IMAP/SMTP* under QQ Mail settings → Account, then generate a code and paste it into `smtp.password`. Other providers work the same way; port 465 pairs with SSL, port 587 with STARTTLS.
+QQ 邮箱需要的是**应用专用授权码，不是登录密码**。在 QQ 邮箱「设置 → 账户」里开启 *POP3/IMAP/SMTP 服务*，生成授权码后填进 `smtp.password`。其他邮箱同理，端口 465 配 SSL，587 配 STARTTLS。
 
 ---
 
-## Command line
+## 命令行用法
 
-The web service already contains the scheduler, so these are mainly for debugging or headless use.
+定时逻辑已经内置在 Web 服务里，下面这些主要用于排查或不想开网页的场景。
 
 ```bash
-python monitor.py --check        # read cached balance only, no quota used
-python monitor.py --refresh      # force one meter read, uses 1 quota unit
-python monitor.py --test-email   # send a test email using config.json
-python monitor.py --loop         # headless: same scheduler, no web console
-python monitor.py                # single run, only acts when an interval is due
+python monitor.py --check        # 只读缓存余额，不消耗额度
+python monitor.py --refresh      # 强制抄表一次，消耗 1 次额度
+python monitor.py --test-email   # 按 config.json 的配置发测试邮件
+python monitor.py --loop         # 无界面常驻，同样的调度逻辑
+python monitor.py                # 只跑一轮，到点才真正请求
 ```
 
 ---
 
-## HTTP API
+## HTTP 接口
 
-| Method | Path | Purpose |
+| 方法 | 路径 | 用途 |
 | --- | --- | --- |
-| `GET` | `/api/status` | Current balance, history, quota, countdowns, scheduler state |
-| `GET` | `/api/config` | Settings (the SMTP password is never returned, only `has_password`) |
-| `POST` | `/api/config` | Partial update of any settings |
-| `POST` | `/api/refresh` | Force a meter read |
-| `POST` | `/api/test-email` | Send a test email with the current form values |
-| `GET` | `/api/buildings?parent=<id>` | One level of the building tree |
+| `GET` | `/api/status` | 当前余额、历史、额度、倒计时、调度状态 |
+| `GET` | `/api/config` | 读取配置（SMTP 密码永不回传，只返回 `has_password`） |
+| `POST` | `/api/config` | 局部更新任意配置项 |
+| `POST` | `/api/refresh` | 强制抄表 |
+| `POST` | `/api/test-email` | 用当前表单值发测试邮件 |
+| `GET` | `/api/buildings?parent=<id>` | 楼栋树的某一层 |
 
 ---
 
-## Project structure
+## 文件结构
 
 ```
 .
-├── server.py              Flask console + scheduler thread
-├── monitor.py             Core logic: auth, queries, meter reads, alerts, mail
-├── config.example.json    Configuration template
-├── config.json            Your configuration (git-ignored)
-├── start.bat              Windows one-click launcher
+├── server.py              Flask 控制台 + 调度线程
+├── monitor.py             核心逻辑：登录、查询、抄表、告警、邮件
+├── config.example.json    配置模板
+├── config.json            你的配置（已被 git 忽略）
+├── start.bat              Windows 一键启动
 ├── requirements.txt
 └── web/
     ├── index.html
@@ -189,28 +191,28 @@ python monitor.py                # single run, only acts when an interval is due
     └── app.js
 ```
 
-`config.json`, `state.json`, `history.csv` and `monitor.log` are created locally and ignored by Git.
+`config.json`、`state.json`、`history.csv`、`monitor.log` 都在本地生成，且被 Git 忽略。
 
 ---
 
-## Security notes
+## 安全须知
 
-- `config.json` holds your SMTP authorization code. **Never commit it** — it is already in `.gitignore`; keep it that way
-- The web console has **no authentication**. With `web.host` set to `0.0.0.0`, anyone who can reach the port can view your balance and change your settings. Keep the default `127.0.0.1` unless you actually need LAN access
-- On campus Wi-Fi, client isolation often prevents device-to-device connections anyway
-- Rotate your SMTP authorization code if it is ever exposed
-
----
-
-## Limitations
-
-- Bound to the BUPT Shahe campus portal; the building tree and endpoints are specific to it
-- Depends on an undocumented API that the university could change at any time
-- Balance history is only as fresh as the last meter read
-- Running the console and `monitor.py --loop` at the same time is not recommended: both write `state.json`
+- `config.json` 里存着 SMTP 授权码，**绝不要提交它** —— 它已经在 `.gitignore` 里，请保持这样
+- 网页控制台**没有身份验证**。把 `web.host` 设为 `0.0.0.0` 后，任何能访问该端口的人都能看到你的余额、改动你的配置。除非确实需要局域网访问，否则保持默认的 `127.0.0.1`
+- 校园 WiFi 通常开启了客户端隔离，设备之间本来就通不了
+- 授权码一旦外泄，请立刻重置
 
 ---
 
-## Disclaimer
+## 局限
 
-Unofficial, unaffiliated project, intended for personal use. It reads only your own room's data through the portal's public query account using the same requests the website makes. Use at your own risk — a missed alert may mean a power cut.
+- 只适用于北邮沙河校区的缴费平台，楼栋树和接口都是该平台特有的
+- 依赖一套未公开文档的接口，学校随时可能改动
+- 余额历史的时效性取决于上一次抄表时间
+- 不建议同时运行网页控制台和 `monitor.py --loop`：两者都会写 `state.json`
+
+---
+
+## 免责声明
+
+非官方项目，与学校无关，仅供个人使用。它只通过平台的公开查询账号、用与网页相同的请求读取你自己房间的数据。使用风险自负 —— 漏掉一次告警可能意味着断电。
