@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>电费监控</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <h1>电费监控</h1>
+    <p class="room" id="roomLabel">—</p>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- 读数区 -->
+  <section class="readout" id="readout">
+    <div class="readout-head">
+      <span class="eyebrow">当前余额</span>
+      <span class="badge" id="stateBadge" hidden></span>
+    </div>
+
+    <div class="balance">
+      <span class="num" id="balanceNum">—</span><span class="unit">元</span>
+    </div>
+
+    <p class="stamp" id="stamp">正在读取…</p>
+
+    <div class="runway">
+      <div class="runway-bar"><i id="runwayFill"></i></div>
+      <div class="runway-foot">
+        <span id="runwayText">—</span>
+        <span id="thresholdText" class="muted"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 操作区 -->
+  <section class="bar">
+    <button class="btn primary" id="btnRefresh">刷新表计</button>
+    <div class="bar-meta">
+      <span id="quotaText" class="pill">今日额度 —</span>
+      <span id="autoText" class="muted small"></span>
+      <span id="checkText" class="muted small"></span>
+    </div>
+  </section>
+  <!-- 三项指标 -->
+  <section class="stats">
+    <div class="stat">
+      <span class="stat-label">表读数</span>
+      <span class="stat-value"><b id="sMeter">—</b><em>度</em></span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">剩余电量</span>
+      <span class="stat-value"><b id="sRemain">—</b><em>度</em></span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">预估可用</span>
+      <span class="stat-value"><b id="sDays">—</b><em>天</em></span>
+    </div>
+  </section>
+
+  <!-- 走势 -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>余额走势</h2>
+      <span class="muted small" id="sparkMeta"></span>
+    </div>
+    <div class="spark" id="spark"></div>
+    <details class="log">
+      <summary>查看记录明细</summary>
+      <div class="table-wrap">
+        <table id="histTable">
+          <thead><tr><th>时间</th><th>余额</th><th>表读数</th><th>来源</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </details>
+  </section>
+
+  <!-- 宿舍 -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>宿舍</h2>
+      <button type="button" class="btn ghost small" id="btnPickRoom">更换宿舍</button>
+    </div>
+    <p class="room-line" id="roomLine">—</p>
+
+    <div class="picker" id="picker" hidden>
+      <div class="crumbs" id="crumbs"></div>
+      <div class="choices" id="choices"></div>
+      <div class="picker-foot">
+        <button type="button" class="btn primary small" id="btnUseRoom" disabled>使用此宿舍</button>
+        <span class="muted small" id="pickerHint">逐级点选到房间</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 配置 -->
+  <section class="panel">
+    <div class="panel-head"><h2>告警设置</h2></div>
+
+    <form id="cfgForm" autocomplete="off" novalidate>
+      <div class="field">
+        <label for="threshold">余额低于此值时告警</label>
+        <div class="row">
+          <input id="threshold" name="threshold" type="number" min="0.01" step="0.01" required>
+          <span class="suffix">元</span>
+        </div>
+        <p class="hint">充值回正后会再发一封恢复通知。</p>
+      </div>
+
+      <div class="field">
+        <label for="checkInterval">读取余额间隔</label>
+        <div class="row">
+          <input id="checkInterval" name="checkInterval" type="number" min="10" max="1440" step="1" required>
+          <span class="suffix">分钟</span>
+        </div>
+        <p class="hint">只读平台缓存的余额，不消耗电表额度。不是实时值。</p>
+      </div>
+
+      <div class="field">
+        <label for="interval">自动抄表间隔</label>
+        <div class="row">
+          <input id="interval" name="interval" type="number" min="1" max="24" step="1" required>
+          <span class="suffix">小时</span>
+        </div>
+        <p class="hint">真正读电表，会消耗刷新额度（每天 10 次），建议 12 小时。</p>
+      </div>
+
+      <div class="field switch-field">
+        <label class="switch">
+          <input id="autoRefresh" type="checkbox">
+          <span class="track"><span class="dot"></span></span>
+          <span class="switch-text">启用自动抄表</span>
+        </label>
+      </div>
+
+      <div class="field">
+        <label for="cooldown">预警邮件冷却</label>
+        <div class="row">
+          <input id="cooldown" name="cooldown" type="number" min="1" max="720" step="1" required>
+          <span class="suffix">小时</span>
+        </div>
+        <p class="hint">余额持续低于阈值时，最多每隔这么久提醒一次。填 24 即每天一封。</p>
+      </div>
+
+      <div class="panel-head sub">
+        <h2>邮件通知</h2>
+        <button class="btn ghost small" type="button" id="btnTest">发送测试邮件</button>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label for="smtpHost">SMTP 服务器</label>
+          <input id="smtpHost" name="smtpHost" placeholder="smtp.qq.com">
+        </div>
+        <div class="field narrow">
+          <label for="smtpPort">端口</label>
+          <input id="smtpPort" name="smtpPort" type="number" placeholder="465">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="smtpUser">发件邮箱</label>
+        <input id="smtpUser" name="smtpUser" type="text" inputmode="email" placeholder="you@qq.com">
+      </div>
+
+      <div class="field">
+        <label for="smtpPass">授权码</label>
+        <input id="smtpPass" name="smtpPass" type="password" placeholder="邮箱授权码，非登录密码">
+        <p class="hint" id="passState">首次配置请填写；已保存后留空表示不修改。</p>
+      </div>
+
+      <div class="field">
+        <label for="recipients">收件人</label>
+        <input id="recipients" name="recipients" placeholder="多个邮箱用逗号分隔">
+      </div>
+
+      <div class="actions-row">
+        <button class="btn primary" type="submit" id="btnSave">保存设置</button>
+      </div>
+    </form>
+  </section>
+
+  <footer class="foot">
+    数据来源 <a href="https://shgyfk.bupt.edu.cn/h5/bindroom" target="_blank" rel="noreferrer">北邮水电缴费</a>
+    · 页面仅在本机运行 · <span id="schedNote">服务关闭后停止监控</span>
+  </footer>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

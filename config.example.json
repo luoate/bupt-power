@@ -1,0 +1,39 @@
+{
+  "room": {
+    "label": "Campus Building 1 Room 101",
+    "building_id": "000000000000000000000000"
+  },
+  "threshold_yuan": 10.0,
+  "alert": {
+    "cooldown_hours": 24.0
+  },
+  "refresh": {
+    "enabled": true,
+    "interval_hours": 12.0,
+    "retry_after_minutes": 60
+  },
+  "smtp": {
+    "host": "smtp.qq.com",
+    "port": 465,
+    "ssl": true,
+    "username": "you@qq.com",
+    "password": "YOUR_SMTP_AUTH_CODE",
+    "sender": "you@qq.com",
+    "recipients": [
+      "you@qq.com"
+    ]
+  },
+  "web": {
+    "host": "127.0.0.1",
+    "port": 5000
+  },
+  "state_file": "state.json",
+  "history_file": "history.csv",
+  "log_file": "monitor.log",
+  "site": {
+    "base_url": "https://shgyfk.bupt.edu.cn/APIXCX",
+    "user": "szbdyb",
+    "key": "4arcOUm6Wau+VuBX8g+IPg==",
+    "check_interval_minutes": 60.0
+  }
+}
